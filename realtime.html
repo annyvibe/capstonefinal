@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>– Real Time Experience</title>
+
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.10.0/p5.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/addons/p5.sound.min.js"></script>
+    <script src="https://unpkg.com/ml5@1/dist/ml5.min.js"></script>
+    <script src="https://bitcraftlab.github.io/p5.gui/libraries/quicksettings.js"></script>
+    <script src="https://bitcraftlab.github.io/p5.gui/libraries/p5.gui.js"></script>
+
+    <link rel="stylesheet" href="style.css" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Quicksand:wght@500;600&display=swap"
+        rel="stylesheet">
+
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: black;
+            color: white;
+            font-family: 'Quicksand';
+        }
+
+
+        #uiContainer {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(30, 30, 30, 0.9);
+            border-radius: 10px;
+            padding: 20px;
+            width: 260px;
+            box-shadow: 0 0 12px rgba(255, 255, 255, 0.1);
+            z-index: 1000;
+            font-family: 'Quicksand';
+        }
+
+        #uiContainer button {
+            margin: 6px 4px;
+            padding: 6px 10px;
+            border: none;
+            border-radius: 6px;
+            background: #444;
+            color: white;
+            cursor: pointer;
+            font-weight: bold;
+            font-family: 'Quicksand';
+        }
+
+        #uiContainer button:hover {
+            background: #666;
+        }
+
+        #visualBars {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 200px;
+            z-index: 999;
+            font-size: 12px;
+            font-family: 'Quicksand';
+        }
+
+        #visualBars .label {
+            margin-bottom: 2px;
+            font-weight: bold;
+            font-family: 'Quicksand';
+        }
+
+        .bar {
+            height: 10px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 5px;
+            margin-bottom: 10px;
+            overflow: hidden;
+        }
+
+        .fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(to right, #03fca9, #1e90ff);
+            transition: width 0.1s;
+        }
+
+        #startupHint .highlight {
+            color: #ff0;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+
+    <button onclick="location.href='start.html'" style="
+      position: fixed;
+      top: 750px;
+      left: 20px;
+      z-index: 999;
+      background: #222;
+      color: white;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+  ">Back</button>
+    <div id="uiContainer">
+        <div class="label">Tracking:</div>
+        <div>
+            <button class="trackBtn" data-track="leftHand">Left Hand</button>
+            <button class="trackBtn" data-track="rightHand">Right Hand</button>
+            <button class="trackBtn" data-track="leftFoot">Left Foot</button>
+            <button class="trackBtn" data-track="rightFoot">Righ Foot</button>
+            <button class="trackBtn" data-track="wholeBody">Whole Body</button>
+        </div>
+        <div class="label">Recording</div>
+        <div>
+            <button id="startBtn">Start</button>
+            <button id="stopBtn">Stop</button>
+            <button id="clearBtn">Clear</button>
+            <button id="saveBtn">Save</button>
+            <button id="replayBtn">Replay</button>
+        </div>
+    </div>
+
+    <!-- Volume & Speed Bars -->
+    <div id="visualBars">
+        <div class="label">VOLUME</div>
+        <div class="bar">
+            <div id="volumeFill" class="fill"></div>
+        </div>
+        <div class="label">SPEED</div>
+        <div class="bar">
+            <div id="speedFill" class="fill"></div>
+        </div>
+    </div>
+    <div id="statusMessage" style="
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        color: white;
+        font-size: 32px;
+        background: rgba(0,0,0,0.6);
+        padding: 20px 40px;
+        border-radius: 12px;
+        display: none;
+        z-index: 10000;
+        text-align: center;
+        font-weight: bold;
+    ">
+    </div>
+    <div id="emotionFeedback" style="
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translateX(-50%);
+        color: white;
+        font-size: 22px;
+        background: rgba(0, 0, 0, 0.7);
+        padding: 18px 28px;
+        border-radius: 12px;
+        display: none;
+        z-index: 9999;
+        text-align: center;
+        white-space: pre-line;
+        font-weight: bold;
+        max-width: 90%;
+    ">
+    </div>
+    <div id="startupHint" style="
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        color: white;
+        font-size: 20px;
+        background: rgba(0,0,0,0.7);
+        padding: 20px 30px;
+        border-radius: 16px;
+        z-index: 9999;
+        font-weight: bold;
+        text-align: center;
+        max-width: 90%;
+        line-height: 1.6;
+        white-space: pre-line; 
+       
+    ">
+        Click the button at bottom right to <span class="highlight">start/stop recording</span><br>
+        Click <span class="highlight">Clear</span> to clean up the track<br>
+        <span class="highlight">Zoom in/out</span> or drag to interact with the track<br>
+        Click <span class="highlight">Save</span> to save your track, and you can find it in the User Archive<br>
+        Click <span class="highlight">Replay</span> to replay your track
+    </div>
+    </div>
+
+
+    <script src="realtime.js"></script>
+</body>
+
+</html>

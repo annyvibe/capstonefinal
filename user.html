@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>User Archive</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Quicksand:wght@500;600&display=swap"
+        rel="stylesheet">
+
+    <style>
+        body {
+            background: url('assets/studio3.jpg') no-repeat center center fixed;
+            background-size: cover;
+            color: white;
+            font-family: ' Dancing Script';
+            margin: 0;
+            padding: 0;
+        }
+
+        .gallery-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 12px;
+            padding: 40px;
+        }
+
+        .track-card {
+            background: #111;
+            border-radius: 6px;
+            padding: 12px;
+            cursor: pointer;
+            text-align: center;
+        }
+
+        .track-card:hover {
+            background: #222;
+        }
+
+        .timestamp {
+            font-size: 12px;
+            color: #888;
+            margin-bottom: 6px;
+        }
+
+        button.back {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: #222;
+            color: #fff;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .delete-btn {
+            position: absolute;
+            bottom: 6px;
+            right: 6px;
+            background: transparent;
+            border: none;
+            color: #f55;
+            font-size: 16px;
+            cursor: pointer;
+            outline: none;
+        }
+
+        .delete-btn:hover {
+            color: #faa;
+        }
+    </style>
+</head>
+
+<body>
+
+    <button class="back" onclick="location.href='start.html'">‹ Back</button>
+    <h1 style="
+      text-align: center;
+      margin-top: 40px;
+       font-family: 'Dancing Script', cursive;
+      font-size: 3.5rem;
+   ">User Archive</h1>
+    <div class="gallery-container" id="userGallery">
+    </div>
+
+    <script>
+        const container = document.getElementById('userGallery');
+        const saved = JSON.parse(localStorage.getItem('userTracks') || '[]');
+        if (!saved.length) {
+            container.innerHTML = '<p style="grid-column:1/-1; color:#888; text-align:center;">No track saved.</p>';
+        } else {
+            saved.forEach((item, idx) => {
+                const card = document.createElement('div');
+                card.className = 'track-card';
+                card.style.position = 'relative';
+                const date = new Date(item.timestamp);
+                card.innerHTML = `
+                <button class="delete-btn">&times;</button>
+                <div class="timestamp">${date.toLocaleString()}</div>
+               <div>${item.name || `Track #${idx + 1}`}</div>
+            `;
+                container.appendChild(card);
+                card.addEventListener('click', () => {
+                    location.href = `track.html?index=${idx}`;
+                });
+
+                const delBtn = card.querySelector('.delete-btn');
+                delBtn.addEventListener('click', e => {
+                    e.stopPropagation();
+                    if (confirm(`Are you sure to delete "${userName}"'s track？`)) {
+                        saved.splice(idx, 1);
+                        localStorage.setItem('userTracks', JSON.stringify(saved));
+                        container.removeChild(card);
+                    }
+                });
+            });
+        }
+    </script>
+</body>
+
+</html>

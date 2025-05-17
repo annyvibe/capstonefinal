@@ -1,0 +1,40 @@
+html,
+body {
+    margin: 0;
+    padding: 0;
+}
+
+canvas {
+    display: block;
+}
+
+#visualBars {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    width: 200px;
+    z-index: 999;
+    font-size: 12px;
+    font-family: sans-serif;
+    color: white;
+}
+
+#visualBars .label {
+    margin-bottom: 2px;
+    font-weight: bold;
+}
+
+.bar {
+    height: 10px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 5px;
+    margin-bottom: 10px;
+    overflow: hidden;
+}
+
+.fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(to right, #03fca9, #1e90ff);
+    transition: width 0.1s;
+}

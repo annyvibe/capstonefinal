@@ -1,0 +1,334 @@
+<!-- track.html -->
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Track Viewer</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.10.0/p5.js"></script>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: #000;
+        }
+
+        button {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 2;
+            padding: 8px 12px;
+            background: #222;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+    <button onclick="history.back()">‹ Back</button>
+
+    <button id="playBtn" style="top:60px;">Play</button>
+
+    <script>
+        let pts = [], replay = false, idx = 0;
+        let playBtn;
+        let particles = [];
+
+        function setup() {
+            createCanvas(windowWidth, windowHeight, WEBGL);
+            orbitControl();
+            playBtn = document.getElementById('playBtn');
+            playBtn.onclick = toggleReplay;
+            frameRate(60);
+
+            const i = +new URLSearchParams(location.search).get('index');
+            const saved = JSON.parse(localStorage.getItem('userTracks') || '[]');
+            if (saved[i]) {
+
+                pts = saved[i].data.map(d => ({
+                    pos: createVector(d.x, d.y, d.z),
+                    shape: d.shape,
+                    color: color(d.color[0], d.color[1], d.color[2]),
+                    baseSize: d.baseSize,
+                    thickness: d.thickness
+                }));
+
+                pts.forEach(p => {
+                    p.drawReplay = function (other) {
+                        stroke(this.color);
+                        strokeWeight(this.thickness);
+                        line(
+                            this.pos.x, this.pos.y, this.pos.z,
+                            other.pos.x, other.pos.y, other.pos.z
+                        );
+                        push();
+                        translate(this.pos.x, this.pos.y, this.pos.z);
+                        fill(this.color);
+                        noStroke();
+                        switch (this.shape) {
+                            case "circle":
+                                rotateX(millis() * 0.001);
+                                rotateY(millis() * 0.0015);
+                                torus(this.baseSize * 0.6, this.baseSize * 0.2, 24, 12);
+                                break;
+                            case "oval":
+                                rotateZ(sin(millis() * 0.001) * PI / 8);
+
+                                beginShape(LINES);
+
+                                vertex(-this.baseSize, this.baseSize, 0);
+                                vertex(this.baseSize, this.baseSize, 0);
+
+                                vertex(this.baseSize, this.baseSize, 0);
+                                vertex(0, -this.baseSize, 0);
+
+                                vertex(0, -this.baseSize, 0);
+                                vertex(-this.baseSize, this.baseSize, 0);
+                                endShape();
+                                break;
+                            case "parallelogram":
+                                rotateY(millis() * 0.0005);
+                                sphere(this.baseSize * 0.6, 6, 6);
+                                break;
+
+                            case "spikyball":
+                                rotateX(millis() * 0.005);
+                                rotateY(millis() * 0.007);
+                                beginShape(LINES);
+
+                                vertex(0, this.baseSize, 0);
+                                vertex(-this.baseSize, -this.baseSize, this.baseSize);
+                                vertex(0, this.baseSize, 0);
+                                vertex(this.baseSize, -this.baseSize, this.baseSize);
+                                vertex(0, this.baseSize, 0);
+                                vertex(0, -this.baseSize, -this.baseSize);
+
+                                vertex(-this.baseSize, -this.baseSize, this.baseSize);
+                                vertex(this.baseSize, -this.baseSize, this.baseSize);
+                                vertex(this.baseSize, -this.baseSize, this.baseSize);
+                                vertex(0, -this.baseSize, -this.baseSize);
+                                vertex(0, -this.baseSize, -this.baseSize);
+                                vertex(-this.baseSize, -this.baseSize, this.baseSize);
+                                endShape();
+                                break;
+                            case "triangleDown":
+                                rotateX(-PI / 2);
+                                cone(this.baseSize * 0.5, this.baseSize * 1.2, 12, 1);
+                                break;
+                        }
+                        pop();
+                    };
+                });
+            }
+        }
+        class MovementPoint {
+            constructor(pos, time, amp) {
+                this.pos = pos.copy();
+                this.time = time;
+                this.amp = amp;
+
+                this.shouldDrawShape = random() < 0.5;
+                this.additionalPos = p5.Vector.random3D().mult(0.05);
+                this.rotAngle = createVector(random(TWO_PI), random(TWO_PI), random(TWO_PI));
+                this.rotSpeed = createVector(random(-0.002, 0.002), random(-0.002, 0.002), random(-0.002, 0.002));
+            }
+
+            speedTo(other) {
+                const d = p5.Vector.dist(this.pos, other.pos);
+                const t = (other.time - this.time) || 1;
+                return d / t;
+            }
+
+            avgAmpWith(other) {
+                return (this.amp + other.amp) / 2;
+            }
+
+            drawLine(other) {
+                const speed = this.speedTo(other);
+                const amp = this.avgAmpWith(other);
+                const style = getVisualBySpeed(speed);
+                const colorBlend = lerpColor(style.colors[0], style.colors[1], random());
+                const speedNorm = map(speed, 0, 0.01, 0, 1, true);
+                const ampNorm = map(amp, 0, 0.3, 0, 1, true);
+
+                const control = max(ampNorm, speedNorm);
+
+                const thickness = map(control, 0, 1.0, 0.05, 100, true);
+
+                stroke(colorBlend);
+                strokeWeight(thickness);
+                line(this.pos.x, this.pos.y, this.pos.z, other.pos.x, other.pos.y, other.pos.z);
+                this.spawnTrailParticles(other);
+            }
+            spawnTrailParticles(other) {
+                const speed = this.speedTo(other);
+                const midpoint = p5.Vector.add(this.pos, other.pos).mult(0.5);
+                const style = getVisualBySpeed(speed);
+
+                const particleCount = 4;
+                for (let i = 0; i < particleCount; i++) {
+                    const offset = p5.Vector.random3D().mult(0.01);
+                    const direction = p5.Vector.random3D().mult(map(speed, 0, 0.005, 0.001, 0.01));
+                    const colorBlend = lerpColor(style.colors[0], style.colors[1], random());
+
+                    particles.push(new Particle3D(midpoint.copy().add(offset), direction, 0.002, colorBlend, speed * 2));
+                }
+            }
+            drawShape(other) {
+                const speed = this.speedTo(other);
+                const amp = this.avgAmpWith(other);
+
+                const style = getVisualBySpeed(speed);
+
+                const baseSize = map(pow(amp, 4), 0, 1, 0.05, 1);
+                const strokeW = map(pow(amp, 4), 0, 1, 0.2, 200);
+
+                let t = sin(millis() * 0.001);
+                let lerpAmt = map(t, -1, 1, 0, 1);
+                let c = lerpColor(style.colors[0], style.colors[1], lerpAmt);
+
+                push();
+                translate(this.pos.x, this.pos.y, this.pos.z);
+                fill(c);
+                stroke(c);
+                strokeWeight(strokeW);
+
+                switch (style.shape) {
+                    case "circle":
+                        rotateX(millis() * 0.001);
+                        rotateY(millis() * 0.0015);
+                        torus(this.baseSize * 0.6, this.baseSize * 0.2, 24, 12);
+                        break;
+                    case "oval":
+                        rotateZ(sin(millis() * 0.001) * PI / 8);
+
+                        beginShape(LINES);
+
+                        vertex(-this.baseSize, this.baseSize, 0);
+                        vertex(this.baseSize, this.baseSize, 0);
+
+                        vertex(this.baseSize, this.baseSize, 0);
+                        vertex(0, -this.baseSize, 0);
+
+                        vertex(0, -this.baseSize, 0);
+                        vertex(-this.baseSize, this.baseSize, 0);
+                        endShape();
+                        break;
+                    case "parallelogram":
+                        rotateY(millis() * 0.0005);
+                        sphere(this.baseSize * 0.6, 6, 6);
+                        break;
+
+                    case "spikyball":
+                        rotateX(millis() * 0.005);
+                        rotateY(millis() * 0.007);
+                        beginShape(LINES);
+
+                        vertex(0, this.baseSize, 0);
+                        vertex(-this.baseSize, -this.baseSize, this.baseSize);
+                        vertex(0, this.baseSize, 0);
+                        vertex(this.baseSize, -this.baseSize, this.baseSize);
+                        vertex(0, this.baseSize, 0);
+                        vertex(0, -this.baseSize, -this.baseSize);
+
+                        vertex(-this.baseSize, -this.baseSize, this.baseSize);
+                        vertex(this.baseSize, -this.baseSize, this.baseSize);
+                        vertex(this.baseSize, -this.baseSize, this.baseSize);
+                        vertex(0, -this.baseSize, -this.baseSize);
+                        vertex(0, -this.baseSize, -this.baseSize);
+                        vertex(-this.baseSize, -this.baseSize, this.baseSize);
+                        endShape();
+                        break;
+                    case "triangleDown":
+                        rotateX(-PI / 2);
+                        cone(this.baseSize * 0.5, this.baseSize * 1.2, 12, 1);
+                        break;
+                }
+                pop();
+            }
+        }
+
+
+        class Particle3D {
+            constructor(pos, dir, speed, col, amp = 0.1) {
+                this.pos = pos;
+                this.vel = p5.Vector.mult(dir, speed).add(p5.Vector.random3D().mult(0.002));
+                this.life = 255;
+                this.color = col;
+                this.size = map(amp, 0, 1, 0.005, 0.02, true);
+            }
+
+            update() {
+                this.pos.add(this.vel);
+                this.life -= 4;
+            }
+
+            isDead() {
+                return this.life <= 0;
+            }
+
+            display() {
+                push();
+                translate(this.pos.x, this.pos.y, this.pos.z);
+                noStroke();
+                fill(red(this.color), green(this.color), blue(this.color), this.life);
+                sphere(this.size);
+                pop();
+            }
+        }
+
+        function getVisualBySpeed(speed) {
+            colorMode(RGB);
+            if (speed < 0.001) {
+                return { colors: [color(180, 230, 220), color(220, 255, 250)], shape: "parallelogram" }; // peaceful
+            } else if (speed < 0.002) {
+                return { colors: [color(50, 100, 200), color(120, 180, 255)], shape: "oval" }; // sad
+            } else if (speed < 0.003) {
+                return { colors: [color(255, 200, 50), color(255, 255, 150)], shape: "circle" }; // happy
+            } else if (speed < 0.004) {
+                return { colors: [color(90, 60, 110), color(160, 100, 180)], shape: "triangleDown" }; // fear
+            } else {
+                return { colors: [color(220, 0, 0), color(255, 80, 60)], shape: "spikyball" }; // angry
+            }
+        }
+        function draw() {
+            background(0);
+            orbitControl();
+            scale(height / 2);
+
+            if (!pts.length) return;
+            const end = replay ? idx : pts.length - 1;
+            for (let j = 0; j < end; j++) {
+                pts[j].drawReplay(pts[j + 1]);
+            }
+            if (replay) {
+                idx++;
+                if (idx >= pts.length - 1) {
+                    replay = false;
+                    idx = 0;
+                    playBtn.innerText = 'Play';
+                }
+            }
+        }
+
+        function toggleReplay() {
+
+            if (!replay) {
+                replay = true;
+                idx = 0;
+                playBtn.innerText = 'Pause';
+                frameRate(10);
+            } else {
+                replay = false;
+                playBtn.innerText = 'Play';
+                frameRate(60);
+            }
+        }
+    </script>
+</body>
+
+</html>

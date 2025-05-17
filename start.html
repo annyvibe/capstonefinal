@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>EmotiDance</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Quicksand:wght@500;600&display=swap"
+    rel="stylesheet">
+
+
+  <style>
+    body {
+      margin: 0;
+      width: 100vw;
+      height: 100vh;
+
+      background: url('assets/studio3.jpg') no-repeat center center fixed;
+      background-size: cover;
+
+
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+
+
+      font-family: 'Quicksand', serif;
+      color: #fff;
+      text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.7);
+    }
+
+    h1 {
+      font-family: 'Dancing Script', cursive;
+      font-size: 8rem;
+      margin-bottom: 2rem;
+
+      letter-spacing: 0.1em;
+      font-weight: 700;
+      text-transform: none;
+    }
+
+    .btn-container {
+      display: flex;
+      gap: 2.5rem;
+    }
+
+    .entry-btn {
+
+      background: none;
+      border: none;
+
+      color: #fff;
+      font-size: 1.25rem;
+      font-weight: bold;
+      font-family: 'Quicksand', sans-serif;
+
+      padding: 0.5rem 1rem;
+
+      transition: transform 0.2s, text-shadow 0.2s, color 0.2s;
+    }
+
+    .entry-btn:hover {
+
+      transform: scale(1.1);
+
+      text-shadow: 0 0 8px rgba(255, 255, 255, 0.8);
+
+      color: #ffe;
+    }
+  </style>
+</head>
+
+<body>
+
+  <h1>EmotiDance</h1>
+  <div class="btn-container">
+    <a href="gallery.html"><button class="entry-btn">Dancer Archive</button></a>
+    <a href="realtime.html"><button class="entry-btn">Real Time Experience</button></a>
+    <a href="user.html"><button class="entry-btn">User Archive</button></a>
+  </div>
+</body>
+
+</html>

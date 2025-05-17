@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>EmotiDance Viewer</title>
+    <!-- p5, ml5, sound, GUI libs -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.10.0/p5.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/addons/p5.sound.min.js"></script>
+    <script src="https://unpkg.com/ml5@1/dist/ml5.min.js"></script>
+    <script src="https://bitcraftlab.github.io/p5.gui/libraries/quicksettings.js"></script>
+    <script src="https://bitcraftlab.github.io/p5.gui/libraries/p5.gui.js"></script>
+    <link rel="stylesheet" href="style.css">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Quicksand:wght@500;600&display=swap"
+        rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: black;
+            color: white;
+
+            font-family: 'Quicksand', sans-serif;
+        }
+
+        /* UI container styles */
+        #uiContainer {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(30, 30, 30, 0.9);
+            border-radius: 10px;
+            padding: 20px;
+            width: 260px;
+            box-shadow: 0 0 12px rgba(255, 255, 255, 0.1);
+            z-index: 1000;
+            font-family: 'Quicksand'
+        }
+
+        #uiContainer button {
+            margin: 6px 4px;
+            padding: 6px 10px;
+            border: none;
+            border-radius: 6px;
+            background: #444;
+            color: white;
+            cursor: pointer;
+            font-weight: bold;
+            font-family: 'Quicksand'
+        }
+
+        #uiContainer button:hover {
+            background: #666;
+        }
+
+        #uiContainer .label {
+            margin-top: 10px;
+            font-size: 20px;
+            font-weight: bold;
+            font-family: 'Quicksand'
+        }
+
+        /* Volume/speed bars */
+        #visualBars {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 250px;
+            z-index: 1000;
+        }
+
+        #visualBars .label {
+            margin-bottom: 2px;
+            font-weight: bold;
+            font-family: 'Quicksand'
+        }
+
+        .bar {
+            height: 8px;
+            background: #1c1c1c;
+            margin-bottom: 12px;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(to right, #03fca9, #1e90ff);
+            transition: width 0.1s;
+        }
+
+        #trackingDisplay {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 24px;
+            color: white;
+            pointer-events: none;
+            z-index: 2000;
+            font-family: sans-serif;
+            opacity: 0;
+            transition: opacity 0.5s;
+            font-family: 'Quicksand'
+        }
+    </style>
+</head>
+
+<body>
+    <button onclick="location.href='gallery.html'" style="
+      position: fixed;
+      top: 750px;
+      left: 20px;
+      z-index: 999;
+      background: #222;
+      color: white;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+  ">Back</button>
+    <div id="trackingDisplay">Current tracking: leftHand</div>
+    <main></main>
+
+    <!-- UI 控制面板 -->
+    <div id="uiContainer">
+
+        <div class="label">Video Controls:</div>
+        <div>
+            <button id="playButton">Play</button>
+            <button id="replayButton">Replay</button>
+
+            <button id="expandButton">Zoom In</button>
+            <button id="shrinkButton">Zoom Out</button>
+        </div>
+
+        <div class="label">Tracking:</div>
+        <div>
+            <button class="trackBtn" data-track="leftHand">leftHand</button>
+            <button class="trackBtn" data-track="rightHand">rightHand</button>
+            <button class="trackBtn" data-track="leftFoot">leftFoot</button>
+            <button class="trackBtn" data-track="rightFoot">rightFoot</button>
+            <button class="trackBtn" data-track="wholeBody">Whole Body</button>
+        </div>
+    </div>
+
+    <div id="visualBars">
+        <div class="label">VOLUME</div>
+        <div class="bar">
+            <div id="volumeFill" class="fill"></div>
+        </div>
+        <div class="label">SPEED</div>
+        <div class="bar">
+            <div id="speedFill" class="fill"></div>
+        </div>
+    </div>
+
+    <!-- Read selected dancer & emotion -->
+    <script>
+        const dancerParam = localStorage.getItem('currentDancer') || 'Dancer1';
+        const emotionParam = localStorage.getItem('currentEmotion') || 'happy';
+        window.initialDancer = dancerParam;
+        window.initialEmotion = emotionParam;
+    </script>
+
+    <!-- Your sketch -->
+    <script src="dancer.js"></script>
+</body>
+
+</html>
