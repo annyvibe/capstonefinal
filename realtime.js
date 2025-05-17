@@ -57,22 +57,47 @@ function setup() {
 
     document.getElementById("stopBtn").onclick = () => {
         isRecording = false;
-        if (movePoints.length >= 2) {
+
+        if (currentTracking === 'wholeBody') {
+
+            const speeds = [];
+            PARTS.forEach(part => {
+                const arr = movePointsMap.get(part);
+                for (let i = 0; i < arr.length - 1; i++) {
+                    speeds.push(arr[i].speedTo(arr[i + 1]));
+                }
+            });
+            if (speeds.length) {
+                const avgSpeed = speeds.reduce((a, b) => a + b, 0) / speeds.length;
+                const { label, advice } = getEmotionTextBySpeed(avgSpeed);
+                const vMsg = `I think you feel ${label} today.\n${advice}`;
+                const sMsg = `I think you feel ${label} today. ${advice}`;
+                speakText(sMsg, vMsg);
+            }
+        }
+        else if (movePoints.length >= 2) {
+
             let totalSpeed = 0;
             for (let i = 0; i < movePoints.length - 1; i++) {
                 totalSpeed += movePoints[i].speedTo(movePoints[i + 1]);
             }
-            let avgSpeed = totalSpeed / (movePoints.length - 1);
+            const avgSpeed = totalSpeed / (movePoints.length - 1);
             const { label, advice } = getEmotionTextBySpeed(avgSpeed);
-            const visibleMessage = `I think you feel ${label} today.\n${advice}`;
-            const spokenMessage = `I think you feel ${label} today. ${advice}`;
-            speakText(spokenMessage, visibleMessage);
+            const vMsg = `I think you feel ${label} today.\n${advice}`;
+            const sMsg = `I think you feel ${label} today. ${advice}`;
+            speakText(sMsg, vMsg);
         }
+
     };
 
     document.getElementById("clearBtn").onclick = () => {
+
         movePoints = [];
-        shapes.forEach(s => s.lifeReduction = 20);
+        movePointsMap.forEach(arr => arr.length = 0);
+        shapes.forEach(s => {
+            s.lifeReduction = 20;
+        });
+
         showMessage("Clear Trajectory");
     };
 
@@ -175,7 +200,7 @@ function draw() {
     }
 
     if (currentTracking === 'wholeBody') {
-        if (poses.length > 0) {
+        if (isRecording && poses.length > 0) {
             PARTS.forEach(part => {
                 let idx = TRACKED_POINTS[part];
                 let kp = poses[0].keypoints3D[idx];
@@ -499,11 +524,30 @@ class Shape3D {
     }
 }
 function switchTracking(part) {
+
     currentTracking = part;
     movePoints = [];
     movePointsMap.forEach(arr => arr.length = 0);
+    shapes = [];
+    particles = [];
+
     replaying = false;
     replayIndex = 0;
+
+    video.time(0);
+    video.pause();
+    isPlaying = false;
+    document.getElementById("playButton").innerText = "Play";
+    if (handAudio) handAudio.stop();
+    if (feetAudio) feetAudio.stop();
+    if (wholeBodyAudio) wholeBodyAudio.stop();
+
+    clearTimeout(trackingTimeout);
+    trackingDisplay.innerText = `Current tracking: ${part}`;
+    trackingDisplay.style.opacity = '1';
+    trackingTimeout = setTimeout(() => {
+        trackingDisplay.style.opacity = '0';
+    }, 2000);
 }
 
 function replayTrack() {
